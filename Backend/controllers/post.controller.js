@@ -1,5 +1,7 @@
 import Post from "../models/Post.model.js"
 import cloudinary from "../lib/cloudinary.js";
+import Notification from "../models/Notification.model.js";
+import { sendCommentNotificationEmail } from "../emails/emailHandler.js";
 
 export const getFeedPost =async (req,res)=>{
     try {
@@ -114,10 +116,66 @@ export const createComment = async(req,res)=>{
         },{new:true}).populate("author" ,"name email username profilePicture headline" )
 
         // creat notification for comments 
+        if(post.author.toString() !== req.user._id.toString()){
+            const newNotification = new Notification({
+                recipient:post.author,
+                type:"comment",
+                relatedUser:req.user._id,
+                relatedPost:id
+            })
+            await newNotification.save()
+        }
+        // send email
+
+        try {
+            const postUrl = process.env.CLIENT_URL+"/post"+id
+            await sendCommentNotificationEmail (post.author.email,post.author.name,req.user.name,postUrl,content)
+        } catch (error) {
+            console.log("Error in sending comment notification email");
+            
+        }
+
+        res.status(200).json(post)
     } catch (error) {
-        console.log("Error in commenting" , error);
+        console.log("Error in create comment" , error);
         res.status(500).json({
             message:"Internal server error"
+        })
+    }
+}
+
+export const likePost = async (req,res)=>{
+    try {
+        const id = req.params.id
+        const post = await Post.findById(id)
+        const userId = req.user._id
+
+        //unlike the post
+        if(post.likes.includes(userId)){
+            post.likes = post.likes.filter(id => id.toString() !== userId.toString())
+        } else{
+            //like the post
+            post.likes.push(userId)
+
+            //create notification for like
+
+            if(post.author.toString() !== req.user._id.toString()){
+                const newNotification = new Notification({
+                    recipient:post.author,
+                    type:"like",
+                    relatedUser:userId,
+                    relatedPost:id
+                })
+                await newNotification.save()
+            }
+        }
+        await post.save()
+
+        res.status(200).json(post)
+    } catch (error) {
+        console.log("Error in liking the post", error);
+        res.status(500).json({
+            message:"Internal server error "
         })
     }
 }
