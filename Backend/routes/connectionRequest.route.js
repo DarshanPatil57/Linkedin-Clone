@@ -1,5 +1,6 @@
 import express from "express"
 import { protectRoute } from "../middleware/middleware.js"
+import { acceptConnectionRequest, getConnectionRequest, getConnectionStatus, getUserConnections, rejectConnectionRequest, removeConnection, sendConnectionRequest } from "../controllers/connectionRequest.controller.js"
 
 
 const router = express.Router()

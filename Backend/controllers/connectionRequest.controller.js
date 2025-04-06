@@ -131,9 +131,26 @@ export const acceptConnectionRequest = async(req,res)=>{
 
 export const rejectConnectionRequest = async(req,res)=>{
     try {
-        
+        const {requestId} = req.params;
+        const userId = req.user._id;
+
+        const request = await connectionRequest.findById(requestId)
+
+        if(request.recipient.toString() !== userId.toString()){
+            return res.status(403).json({message:"Not authorized to reject the request"})
+        }
+
+        if(request.status !== "pending"){
+            return res.status(400).json({
+                message:"This request has already been processed"
+            })
+        }
+        request.status = "rejected"
+        await request.save()
+
+        res.json({message:"Connection request rejected"})
     } catch (error) {
-        console.log("Error in sending connection request",error);
+        console.log("Error in rejecting connection request",error);
         res.status(500).json({
             message:"Internal server error"
         })
@@ -142,39 +159,83 @@ export const rejectConnectionRequest = async(req,res)=>{
 
 export const getConnectionRequest = async(req,res)=>{
     try {
-        
+        const userId = req.user._id
+
+        const request = await connectionRequest.find({recipient:userId, status:"pending"}).populate("sender" ,"name username profilePicture headline connections")
+
+        res.json(request);
     } catch (error) {
-        console.log("Error in sending connection request",error);
+        console.log("Error in getting connection request",error);
         res.status(500).json({
             message:"Internal server error"
         })
     }
 }
+
 export const getUserConnections = async(req,res)=>{
     try {
-        
+        const userId = req.user._id
+        const user = await connectionRequest.findById(userId).populate("connections" ,"name username profilePicture headline connections")
+
+        res.json(user.connections)
     } catch (error) {
-        console.log("Error in sending connection request",error);
+        console.log("Error in getting connections",error);
         res.status(500).json({
             message:"Internal server error"
         })
     }
 }
+
 export const removeConnection = async(req,res)=>{
     try {
-        
+       const myId = req.user._id
+       const {userId} = req.params;
+
+       await User.findByIdAndUpdate(myId,{$pull:{connections:userId}})
+       await User.findByIdAndUpdate(userId,{$pull:{connections:myId}})
+
+       res.status(200).json({message:'Connection removed successfully'})
+
     } catch (error) {
-        console.log("Error in sending connection request",error);
+        console.log("Error in removing connection request",error);
         res.status(500).json({
             message:"Internal server error"
         })
     }
 }
+
 export const getConnectionStatus = async(req,res)=>{
     try {
-        
+        const targetUserId = req.params.userId;
+        const currentUserId = req.user._id;
+
+        const currentUser = req.user;
+
+        if(currentUser.connections.includes(targetUserId)){
+            return res.json({status:"connected"});
+        }
+        const pendingRequest = await connectionRequest.findOne({
+            $or:[
+                {
+                    sender:currentUserId,recipient:targetUserId,
+                },{
+                    sender:targetUserId, recipient:currentUserId
+                }
+            ],
+            status:"pending"
+        })
+
+        if(pendingRequest){
+            if(pendingRequest.sender.toString() === currentUserId.toString()){
+                return res.json({status:"pending"})
+            }else{
+                return res.json({status:"received" ,requestId:pendingRequest._id})
+            }
+        }
+
+        res.json({status:"not connected"})
     } catch (error) {
-        console.log("Error in sending connection request",error);
+        console.log("Error in getting  connection status",error);
         res.status(500).json({
             message:"Internal server error"
         })
