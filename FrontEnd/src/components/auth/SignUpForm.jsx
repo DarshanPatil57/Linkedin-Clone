@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import React, { useState } from 'react'
 import { axiosInstance } from '../../lib/axios'
 import toast from "react-hot-toast"
@@ -10,13 +10,16 @@ export const SignUpForm = () => {
     const [username,setUsername] = useState("")
     const [password,setPassword] = useState("")
 
-    const {mutate:signUpMutation,isLoading} = useMutation({
+    const queryClient = useQueryClient()
+
+    const {mutate:signUpMutation,isPending} = useMutation({
         mutationFn:async(data)=>{
             const res =  await axiosInstance.post("/auth/signup",data)
             return res.data
         },
         onSuccess:()=>{
             toast.success("Account created successfully")
+            queryClient.invalidateQueries({queryKey:["authUser"]})
         },
         onError:(err)=>{
             toast.error(err.response.data.message || "Something went wrong")
@@ -65,8 +68,8 @@ export const SignUpForm = () => {
             required
             />
         </div>
-        <button type='submit' disabled={isLoading}  className='w-full shadow-sm px-4 py-2 text-white rounded-md  bg-blue-600 cursor-pointer '>
-		{isLoading ? <Loader className="sizw-5 animate-spin"/> : "Agree & Join"}
+        <button type='submit' disabled={isPending}  className='w-full shadow-sm px-4 py-2 text-white rounded-md  bg-blue-600 cursor-pointer '>
+		{isPending ? <Loader className="sizw-5 animate-spin"/> : "Agree & Join"}
 		</button>
     </form>
   )
