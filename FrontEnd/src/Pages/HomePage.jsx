@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import React from 'react'
+import React, { use } from 'react'
 import { axiosInstance } from '../lib/axios'
 import toast from 'react-hot-toast'
 import Sidebar from '../components/Sidebar'
 import { PostCreation } from '../components/PostCreation'
 import Post from '../components/Post'
 import { Users } from 'lucide-react'
+import { RecommendedUser } from '../components/RecommendedUser'
 
 export const HomePage = () => {
 
@@ -64,6 +65,17 @@ export const HomePage = () => {
 					</div>
 				)}
       </div>
+
+      {recommendedUser?.length > 0 && (
+        <div className='col-span-1 lg:col-span-1 hidden lg:block'>
+          <div className='bg-secondary rounded-lg shadow p-4'>
+            <h2 className='font-semibold mb-4'>People you may know</h2>
+            {recommendedUser?.map((user)=>(
+              <RecommendedUser key={user._id} user={user}/>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

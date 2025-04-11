@@ -30,6 +30,9 @@ export const PostCreation = ({user}) => {
 
   const handlePostCreation = async ()=>{
     try {
+      if(!content.trim()){
+        toast.error("Please add some content")
+      }
         const postData = {content}
         if(image) postData.image = await readFileAsDataURL(image)
 
