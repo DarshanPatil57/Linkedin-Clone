@@ -14,6 +14,7 @@ export const RecommendedUser = ({user}) => {
     queryFn: async () => {
       try {
         const res = await axiosInstance.get(`/connection/status/${user._id}`);
+		// console.log("Connection status response:", res.data);
         return res.data;
       } catch (error) {
         toast.error(error?.response?.data?.message || "Something went wrong");
@@ -26,7 +27,9 @@ export const RecommendedUser = ({user}) => {
   // send connection request
   const { mutate: sendConnectionRequest } = useMutation({
     mutationFn: async (userId) => {
+		// console.log("Sending connection request to:", userId);
       const res = await axiosInstance.post(`/connection/request/${userId}`);
+	//   console.log("Connection request response:", res.data);
       return res.data;
     },
     onSuccess: () => {
@@ -79,7 +82,7 @@ export const RecommendedUser = ({user}) => {
 			);
 		}
 
-		switch (connectionStatus?.data?.status) {
+		switch (connectionStatus?.status) {
 			case "pending":
 				return (
 					<button
@@ -94,14 +97,14 @@ export const RecommendedUser = ({user}) => {
 				return (
 					<div className='flex gap-2 justify-center'>
 						<button
-							onClick={() => acceptRequest(connectionStatus.data.requestId)}
-							className={`rounded-full p-1 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white`}
+							onClick={() => acceptRequest(connectionStatus.requestId)}
+							className={`rounded-full p-1 flex items-center justify-center cursor-pointer bg-green-500 hover:bg-green-600 text-white`}
 						>
 							<Check size={16} />
 						</button>
 						<button
-							onClick={() => rejectRequest(connectionStatus.data.requestId)}
-							className={`rounded-full p-1 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white`}
+							onClick={() => rejectRequest(connectionStatus.requestId)}
+							className={`rounded-full p-1 flex items-center justify-center cursor-pointer bg-red-500 hover:bg-red-600 text-white`}
 						>
 							<X size={16} />
 						</button>
@@ -131,7 +134,7 @@ export const RecommendedUser = ({user}) => {
 	};
 
 	const handleConnect = () => {
-		if (connectionStatus?.data?.status === "not connected") {
+		if (connectionStatus?.status === "not connected") {
 			sendConnectionRequest(user._id);
 		}
     console.log("Connection status:", connectionStatus);

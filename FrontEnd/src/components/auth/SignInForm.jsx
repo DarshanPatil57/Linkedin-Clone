@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import React, { useState } from 'react'
 import { axiosInstance } from '../../lib/axios'
 import toast from 'react-hot-toast'
+import { Loader } from 'lucide-react'
 
 export const SignInForm = () => {
 
@@ -53,7 +54,7 @@ export const SignInForm = () => {
         </div>
 
         <button type='submit' disabled={isPending}  className='w-full shadow-sm px-4 py-2 text-white rounded-md  bg-blue-600 cursor-pointer '>
-		{isPending ? <Loader className="sizw-5 animate-spin"/> : "Sign In"}
+		{isPending ? <Loader className="sizw-5 animate-spin flex items-center text-center"/> : "Sign In"}
 		</button>
       </form>
     </div>

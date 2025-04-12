@@ -43,7 +43,7 @@ export default function Sidebar({ user }) {
 						</li>
 						<li>
 							<Link
-								to='/notifications'
+								to='/notification'
 								className='flex items-center py-2 px-4 rounded-md hover:bg-gray-50 hover:text-black transition-colors'
 							>
 								<Bell className='mr-2' size={20} /> Notifications
