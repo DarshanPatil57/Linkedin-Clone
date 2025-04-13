@@ -7,7 +7,7 @@ export const getFeedPost =async (req,res)=>{
     try {
         const posts = await Post.find({
             author:{
-                $in:req.user.connection
+                $in:[...req.user.connections, req.user._id]
             }   
         }).populate("author" , "name username profilePicture headline").populate("comments.user","name profilePicture").sort({createdAt:-1})
 
@@ -26,11 +26,11 @@ export const createPost = async (req,res)=>{
 
         let newPost;
         if(image){
-           const imgResult =  cloudinary.uploader.upload(image)
+           const imgResult = await cloudinary.uploader.upload(image)
            newPost = new Post({
             author:req.user._id,
             content,
-            image:imgResult
+            image:imgResult.secure_url
            })
         } else{
             newPost = new Post({
@@ -116,7 +116,7 @@ export const createComment = async(req,res)=>{
         },{new:true}).populate("author" ,"name email username profilePicture headline" )
 
         // creat notification for comments 
-        if(post.author.toString() !== req.user._id.toString()){
+        if(post.author._id.toString() !== req.user._id.toString()){
             const newNotification = new Notification({
                 recipient:post.author,
                 type:"comment",

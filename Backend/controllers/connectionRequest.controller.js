@@ -1,9 +1,12 @@
 import { sendConnectionAcceptedEmail } from "../emails/emailHandler.js";
-import connectionRequest from "../models/connectionRequest.model.js";
+import ConnectionRequest from "../models/connectionRequest.model.js";
 import Notification from "../models/Notification.model.js";
 import User from "../models/User.model.js";
 
 export const sendConnectionRequest = async(req,res)=>{
+    // console.log("sendConnectionRequest called ");
+    // console.log("sendConnectionRequest called with userId:", req.params.userId);
+    // console.log("Current user:", req.user._id);
     try {
         const {userId} = req.params;
         const senderId = req.user._id;
@@ -14,17 +17,18 @@ export const sendConnectionRequest = async(req,res)=>{
             })
         }
 
-        if(req.user.connectios.includes(userId)){
+        if(req.user.connections.includes(userId)){
             return res.status(400).json({
                 message:"You are already connected"
             })
         }
 
-        const existingRequest = new connectionRequest.findOne({
-            sender:senderId,
-            recipient:userId,
-            status:"pending"
-        })
+        const existingRequest = await ConnectionRequest.findOne({
+            sender: senderId,
+            recipient: userId,
+            status: "pending",
+          });
+          
 
         if(existingRequest){
             return res.status(400).json({
@@ -32,12 +36,19 @@ export const sendConnectionRequest = async(req,res)=>{
             })
         }
 
-        const newRequest = new connectionRequest({
+        const newRequest = new ConnectionRequest({
             sender:senderId,
             recipient:userId
         })
 
         await newRequest.save()
+        console.log("Connection request saved:", newRequest);
+
+        
+        res.status(201).json({
+            message: "Connection request sent successfully",
+            request: newRequest
+          });
 
     } catch (error) {
         console.log("Error in sending connection request",error);
@@ -52,7 +63,7 @@ export const acceptConnectionRequest = async(req,res)=>{
         const {requestId} = req.params
         const userId = req.user._id
 
-        const request = await connectionRequest.findById(requestId)
+        const request = await ConnectionRequest.findById(requestId)
         .populate("sender","name email username")
         .populate("recipient","name  username")
 
@@ -134,7 +145,7 @@ export const rejectConnectionRequest = async(req,res)=>{
         const {requestId} = req.params;
         const userId = req.user._id;
 
-        const request = await connectionRequest.findById(requestId)
+        const request = await ConnectionRequest.findById(requestId)
 
         if(request.recipient.toString() !== userId.toString()){
             return res.status(403).json({message:"Not authorized to reject the request"})
@@ -161,7 +172,7 @@ export const getConnectionRequest = async(req,res)=>{
     try {
         const userId = req.user._id
 
-        const request = await connectionRequest.find({recipient:userId, status:"pending"}).populate("sender" ,"name username profilePicture headline connections")
+        const request = await ConnectionRequest.find({recipient:userId, status:"pending"}).populate("sender" ,"name username profilePicture headline connections")
 
         res.json(request);
     } catch (error) {
@@ -172,19 +183,66 @@ export const getConnectionRequest = async(req,res)=>{
     }
 }
 
-export const getUserConnections = async(req,res)=>{
-    try {
-        const userId = req.user._id
-        const user = await connectionRequest.findById(userId).populate("connections" ,"name username profilePicture headline connections")
+// export const getUserConnections = async(req,res)=>{
+//     try {
+//         const userId = req.user._id
+//         const userConnections = await ConnectionRequest.findOne({ user: userId }).populate(
+//             "connections",
+//             "name username profilePicture headline connections"
+//           );
+          
+//         res.json(userConnections.connections)
+//     } catch (error) {
+//         console.log("Error in getting connections",error);
+//         res.status(500).json({
+//             message:"Internal server error"
+//         })
+//     }
+// }
 
-        res.json(user.connections)
-    } catch (error) {
-        console.log("Error in getting connections",error);
-        res.status(500).json({
-            message:"Internal server error"
+export const getUserConnections = async (req, res) => {
+    try {
+      const userId = req.user._id;
+  
+      // Get accepted connection requests where the user is involved
+      const connections = await ConnectionRequest.find({
+        $or: [
+          { sender: userId, status: "accepted" },
+          { recipient: userId, status: "accepted" }
+        ]
+      })
+        .populate("sender", "name username profilePicture headline")
+        .populate("recipient", "name username profilePicture headline");
+  
+      const connectedUsers = await Promise.all(
+        connections.map(async (conn) => {
+          const otherUser =
+            conn.sender._id.toString() === userId.toString()
+              ? conn.recipient
+              : conn.sender;
+  
+          // Get the number of accepted connections for the other user
+          const count = await ConnectionRequest.countDocuments({
+            $or: [
+              { sender: otherUser._id, status: "accepted" },
+              { recipient: otherUser._id, status: "accepted" }
+            ]
+          });
+  
+          return {
+            ...otherUser._doc,
+            connectionCount: count
+          };
         })
+      );
+  
+      res.status(200).json(connectedUsers);
+    } catch (error) {
+      console.error("Error in getting connections", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-}
+  };
+
 
 export const removeConnection = async(req,res)=>{
     try {
@@ -214,7 +272,7 @@ export const getConnectionStatus = async(req,res)=>{
         if(currentUser.connections.includes(targetUserId)){
             return res.json({status:"connected"});
         }
-        const pendingRequest = await connectionRequest.findOne({
+        const pendingRequest = await ConnectionRequest.findOne({
             $or:[
                 {
                     sender:currentUserId,recipient:targetUserId,
@@ -234,6 +292,7 @@ export const getConnectionStatus = async(req,res)=>{
         }
 
         res.json({status:"not connected"})
+          
     } catch (error) {
         console.log("Error in getting  connection status",error);
         res.status(500).json({

@@ -4,6 +4,7 @@ import User from "../models/User.model.js";
 export const getSuggestedConnection = async (req, res) => {
   try {
     const cuurentUser = await User.findById(req.user._id).select("connections");
+    // console.log("Current user connections:", cuurentUser);
 
     // find user who are not already connected , and also excluding our profile
 
@@ -12,9 +13,9 @@ export const getSuggestedConnection = async (req, res) => {
         $ne: req.user._id,
         $nin: cuurentUser.connections,
       },
-    })
-      .select("name username profilePicture headline")
-      .limit(3);
+    }).select("name username profilePicture headline").limit(3);
+
+      // console.log("Suggested users:", suggestedUser);
 
     res.json(suggestedUser);
   } catch (error) {
@@ -45,6 +46,8 @@ export const getPublicProfile = async (req, res) => {
 
 // todo : check for code 
 export const updateProfile = async (req, res) => {
+  // console.log("Received update body:", req.body);
+
   try {
     const allowedFileds = [
       "name",
@@ -81,7 +84,7 @@ export const updateProfile = async (req, res) => {
     }
 
     const user = await User.findOneAndUpdate(
-      req.user._id,
+      { _id: req.user._id },
       {
         $set: updatedData,
       },

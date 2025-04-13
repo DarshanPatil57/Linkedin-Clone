@@ -43,7 +43,7 @@ export const signup = async(req,res)=>{
 
         // create user 
 
-        const user =  User.create({
+        const user = await User.create({
             name,
             username,
             email,
