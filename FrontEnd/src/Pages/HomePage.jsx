@@ -19,6 +19,7 @@ export const HomePage = () => {
     queryFn: async ()=>{
       try {
         const res = await axiosInstance.get("/users/suggestions")
+        console.log("Recommended Users:", res.data);  // Check here
         return res.data
       } catch (error) {
         toast.error(error.response.data.message || "Something went wrong")

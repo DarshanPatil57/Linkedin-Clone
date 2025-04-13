@@ -8,7 +8,7 @@ export default function Sidebar({ user }) {
 				<div
 					className='h-16 rounded-t-lg bg-cover bg-center'
 					style={{
-						backgroundImage: `url("${user.bannerImg || "/banner.png"}")`,
+						backgroundImage: `url("${user.banner || "/banner.png"}")`,
 					}}
 				/>
 				<Link to={`/profile/${user.username}`}>

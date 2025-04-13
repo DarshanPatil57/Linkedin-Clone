@@ -2,11 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import React, { useState } from 'react'
 import { axiosInstance } from '../lib/axios'
 import toast from 'react-hot-toast'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import PostAction from './PostAction'
 import { Loader, MessageCircle, Send, Share2, ThumbsUp, Trash2 } from 'lucide-react'
 
 export default function Post({post}) {
+
+	const {postId} = useParams()
 
   const {data:authUser} = useQuery({queryKey:["authUser"]})
   const [showComment,setShowComment] = useState(false)
@@ -54,6 +56,7 @@ export default function Post({post}) {
     },
     onSuccess: ()=>{
       queryClient.invalidateQueries({queryKey:["posts"]});
+      queryClient.invalidateQueries({queryKey: ["post", postId]});
       // toast.success("Post liked")
     },
     onError:(err)=>{
